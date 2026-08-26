@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npx tsx watch src/serve.ts"
+    "dev": "npx tsx watch src/serve.ts",
+    "format": "prettier --write src/**/*.ts"
   },
   "keywords": [],
   "author": "",
@@ -12,12 +13,18 @@
   "type": "commonjs",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
     "@types/node": "^26.3.0",
     "eslint": "^10.9.1",
     "globals": "^17.11.0",
     "jiti": "^2.7.0",
+    "prettier": "3.9.6",
     "tsx": "^4.23.12",
     "typescript": "5.6",
     "typescript-eslint": "^8.68.0"
+  },
+  "dependencies": {
+    "espress": "^0.0.0",
+    "express": "^5.2.1"
   }
 }
