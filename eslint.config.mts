@@ -12,6 +12,7 @@ export default defineConfig([
       globals: globals.node,
     },
     rules: {
+      indent: ["error", 2],
       quotes: ["error", "double"],
       semi: ["error", "always"],
     },
