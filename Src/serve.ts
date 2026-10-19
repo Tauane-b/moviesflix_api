@@ -33,13 +33,8 @@ app.get("/movies", async (_, res) => {
 
 // POST - Cadastrar um filme
 app.post("/movies", async (req, res) => {
-  const {
-    title,
-    genre_id,
-    language_id,
-    oscar_count,
-    release_date,
-  } = req.body;
+  const { title, genre_id, language_id, oscar_count, release_date } =
+        req.body;
 
   try {
     // Verificar se já existe um filme com o mesmo título
@@ -133,15 +128,13 @@ app.put("/movies/:id", async (req, res) => {
 
     res.status(200).send();
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     return res.status(500).send({
       message: "Falha ao atualizar o filme",
     });
   }
 });
-
-
 
 app.delete("/movies/:id", async (req, res) => {
   try {
@@ -176,6 +169,31 @@ app.delete("/movies/:id", async (req, res) => {
   }
 });
 
+app.get("/movies/:genreName", async (req, res) => {
+  try {
+    const moviesFilteredByGenreName = await prisma.movie.findMany({
+      include: {
+        genres: true,
+        languages: true,
+      },
+      where: {
+        genres: {
+          name: {
+            equals: req.params.genreName,
+            mode: "insensitive",
+          },
+        },
+      },
+    });
+    res.status(200).send(moviesFilteredByGenreName);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).send({
+      message: "Falha ao buscar filmes por gênero",
+    });
+  }
+});
 
 // Iniciar servidor
 app.listen(port, () => {
