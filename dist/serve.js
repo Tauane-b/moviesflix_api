@@ -1,0 +1,184 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const client_1 = require("@prisma/client");
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const swagger_json_1 = __importDefault(require("./swagger.json"));
+const port = 3000;
+const app = (0, express_1.default)();
+app.use(express_1.default.json());
+app.use("/docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_json_1.default));
+const prisma = new client_1.PrismaClient();
+// GET - Buscar todos os filmes
+app.get("/movies", async (_, res) => {
+    try {
+        const movies = await prisma.movie.findMany({
+            orderBy: {
+                title: "asc",
+            },
+            include: {
+                genres: true,
+                languages: true,
+            },
+        });
+        res.json(movies);
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).send({
+            message: "Falha ao buscar filmes",
+        });
+    }
+});
+// POST - Cadastrar um filme
+app.post("/movies", async (req, res) => {
+    const { title, genre_id, language_id, oscar_count, release_date } = req.body;
+    try {
+        // Verificar se já existe um filme com o mesmo título
+        const movieWithSameTitle = await prisma.movie.findFirst({
+            where: {
+                title: {
+                    equals: title,
+                    mode: "insensitive",
+                },
+            },
+        });
+        if (movieWithSameTitle) {
+            return res.status(409).send({
+                message: "Já existe um filme com esse título",
+            });
+        }
+        await prisma.movie.create({
+            data: {
+                title,
+                genre_id,
+                language_id,
+                oscar_count,
+                release_date: new Date(release_date),
+            },
+        });
+        res.status(201).send();
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).send({
+            message: "Falha ao cadastrar um filme",
+        });
+    }
+});
+// PUT - Atualizar um filme
+app.put("/movies/:id", async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+        // Verificar se o filme existe
+        const movie = await prisma.movie.findUnique({
+            where: {
+                id,
+            },
+        });
+        if (!movie) {
+            return res.status(404).send({
+                message: "Filme não encontrado",
+            });
+        }
+        // Verificar se outro filme já possui o mesmo título
+        if (req.body.title) {
+            const movieWithSameTitle = await prisma.movie.findFirst({
+                where: {
+                    title: {
+                        equals: req.body.title,
+                        mode: "insensitive",
+                    },
+                    NOT: {
+                        id,
+                    },
+                },
+            });
+            if (movieWithSameTitle) {
+                return res.status(409).send({
+                    message: "Já existe um filme com esse título",
+                });
+            }
+        }
+        const data = {
+            ...req.body,
+            release_date: req.body.release_date
+                ? new Date(req.body.release_date)
+                : undefined,
+        };
+        await prisma.movie.update({
+            where: {
+                id,
+            },
+            data,
+        });
+        res.status(200).send();
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).send({
+            message: "Falha ao atualizar o filme",
+        });
+    }
+});
+app.delete("/movies/:id", async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        // Verificar se o filme existe
+        const movie = await prisma.movie.findUnique({
+            where: {
+                id,
+            },
+        });
+        if (!movie) {
+            return res.status(404).send({
+                message: "Filme não encontrado",
+            });
+        }
+        await prisma.movie.delete({
+            where: {
+                id,
+            },
+        });
+        res.status(200).send();
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).send({
+            message: "Erro interno do servidor",
+        });
+    }
+});
+app.get("/movies/:genreName", async (req, res) => {
+    try {
+        const moviesFilteredByGenreName = await prisma.movie.findMany({
+            include: {
+                genres: true,
+                languages: true,
+            },
+            where: {
+                genres: {
+                    name: {
+                        equals: req.params.genreName,
+                        mode: "insensitive",
+                    },
+                },
+            },
+        });
+        res.status(200).send(moviesFilteredByGenreName);
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).send({
+            message: "Falha ao buscar filmes por gênero",
+        });
+    }
+});
+// Iniciar servidor
+app.listen(port, () => {
+    console.log(`Servidor em execução na porta ${port}`);
+});
+//# sourceMappingURL=serve.js.map
